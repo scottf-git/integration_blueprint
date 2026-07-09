@@ -1,0 +1,51 @@
+name: Template sync
+
+# Opt-in workflow that periodically opens a PR with upstream *scaffold* changes
+# (CI, tooling, docs, scripts) from ludeeus/integration_blueprint. It never
+# touches your integration code (custom_components/**) or your per-repo identity
+# files -- those are excluded by .templatesyncignore.
+#
+# Setup:
+#   1. Create a Personal Access Token (classic) with `repo` + `workflow` scope,
+#      or a fine-grained PAT with "Contents", "Pull requests" and "Workflows"
+#      read/write on this repo.
+#   2. Save it as a repository secret named TEMPLATE_SYNC_PAT.
+# The PAT is required because the synced payload includes .github/workflows/*,
+# which the default GITHUB_TOKEN is not allowed to write.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 1st of every month at 06:00 UTC
+    - cron: "0 6 1 * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  template-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Use the PAT so the sync can update .github/workflows/* files.
+          token: ${{ secrets.TEMPLATE_SYNC_PAT }}
+          # Required by actions-template-sync when a non-default token is used.
+          persist-credentials: false
+
+      - name: Sync from blueprint
+        uses: AndreasAugustin/actions-template-sync@8a0f668b83c32a0f673353086d74f12b8853d4f5 # v2.5.3
+        with:
+          source_repo_path: ludeeus/integration_blueprint
+          upstream_branch: main
+          target_gh_token: ${{ secrets.TEMPLATE_SYNC_PAT }}
+          pr_labels: sync_template
+          # Enable hooks ONLY for the fail-closed safety guard below. No files
+          # are renamed, rewritten, or substituted -- the hook only validates.
+          is_allow_hooks: true
+          hooks: |
+            prepush:
+              commands:
+                - .github/template-sync-guard.sh

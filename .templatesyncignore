@@ -1,0 +1,22 @@
+# .templatesyncignore
+#
+# Files that must NOT be overwritten when syncing from the upstream
+# ludeeus/integration_blueprint template. Uses .gitignore-style glob patterns.
+#
+# The upstream sync pulls with "-X theirs" (upstream wins on conflict), so this
+# ignore list is the ONLY thing protecting your own code and identity. Keep it
+# accurate. See the "Staying in sync with the blueprint" section of the README.
+
+# --- Your integration code (never sync: it diverges the moment you build it) ---
+custom_components/**
+
+# --- Per-repo identity (yours, not the template's) ---
+manifest.json
+hacs.json
+README.md
+CONTRIBUTING.md
+.devcontainer.json
+config/configuration.yaml
+.github/ISSUE_TEMPLATE/**
+
+# Note: .templatesyncignore itself is never synced (the action restores it).
