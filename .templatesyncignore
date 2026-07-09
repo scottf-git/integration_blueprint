@@ -5,7 +5,7 @@
 #
 # The upstream sync pulls with "-X theirs" (upstream wins on conflict), so this
 # ignore list is the ONLY thing protecting your own code and identity. Keep it
-# accurate. See the "Staying in sync with the blueprint" section of the README.
+# accurate. Full docs: .github/template-sync.md
 
 # --- Your integration code (never sync: it diverges the moment you build it) ---
 custom_components/**

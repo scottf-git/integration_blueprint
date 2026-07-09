@@ -5,6 +5,10 @@ name: Template sync
 # touches your integration code (custom_components/**) or your per-repo identity
 # files -- those are excluded by .templatesyncignore.
 #
+# Full documentation: .github/template-sync.md
+# (Quick-start setup follows; the doc has the safety guard, EOL handling, and
+#  troubleshooting in depth.)
+#
 # Setup — create a PAT and save it as the repo secret TEMPLATE_SYNC_PAT:
 #
 #   Fine-grained PAT (recommended; scope it to this repo only):

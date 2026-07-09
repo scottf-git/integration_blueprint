@@ -44,3 +44,20 @@ These are some next steps you may want to look into:
 - Create your first release.
 - Share your integration on the [Home Assistant Forum](https://community.home-assistant.io/).
 - Submit your integration to [HACS](https://hacs.xyz/docs/publish/start).
+
+
+This is the SHORT pointer to drop into your README. The full instructions live in
+.github/template-sync.md (a synced path, so it self-updates). Keep this stub small:
+your README is yours and is never overwritten by the sync, so anything you put here
+will NOT receive upstream updates — which is exactly why the details live elsewhere.
+-->
+
+## Staying in sync with the blueprint
+
+This repo ships an **opt-in** workflow that periodically opens a reviewable PR with
+upstream *scaffold* improvements (CI, tooling, scripts) from
+[`ludeeus/integration_blueprint`](https://github.com/ludeeus/integration_blueprint).
+It never touches your integration code or per-repo identity files.
+
+Setup, PAT scopes, the safety guard, and troubleshooting are documented in
+**[`.github/template-sync.md`](./.github/template-sync.md)**.
