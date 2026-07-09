@@ -1,0 +1,12 @@
+{
+  "domain": "awesome_integration",
+  "name": "Awesome Integration",
+  "codeowners": [
+    "@ludeeus"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/ludeeus/awesome_integration",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/ludeeus/awesome_integration/issues",
+  "version": "0.1.0"
+}
