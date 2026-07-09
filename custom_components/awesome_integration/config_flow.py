@@ -1,4 +1,4 @@
-"""Adds config flow for Blueprint."""
+"""Config flow for the Vacuum Outcome Timeline integration."""
 
 from __future__ import annotations
 
@@ -19,8 +19,8 @@ from .api import (
 from .const import DOMAIN, LOGGER
 
 
-class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
-    """Config flow for Blueprint."""
+class VacuumOutcomeFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
+    """Config flow for Vacuum Outcome Timeline."""
 
     VERSION = 1
 

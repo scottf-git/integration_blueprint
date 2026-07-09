@@ -1,4 +1,7 @@
-"""DataUpdateCoordinator for awesome_integration."""
+"""DataUpdateCoordinator for awesome_integration.
+
+Heavily customized for vacuum run/session outcome classification.
+"""
 
 from __future__ import annotations
 

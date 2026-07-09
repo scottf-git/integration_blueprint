@@ -1,4 +1,5 @@
 {
+    "custom_marker": "vacuum-outcome",
     "config": {
         "step": {
             "user": {
