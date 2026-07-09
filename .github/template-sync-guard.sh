@@ -12,33 +12,98 @@
 # run with a non-zero exit so nothing is published.
 #
 # This hook only validates. It never renames, rewrites, or substitutes anything.
+#
+# Debuggability: every failure is surfaced. Git errors are fatal and printed
+# (never swallowed into a false "all clear"), the compared base is logged, and
+# problems are emitted as GitHub `::error::` annotations so they show up in the
+# run summary, not just deep in the log.
 
 set -uo pipefail
 
-# The sync commit is HEAD on the action's sync branch. Compare it to its first
-# parent (the pre-sync state) to see exactly what the sync introduced. This needs
-# no remote refs, so it works regardless of fetch depth or checkout config.
-if base="$(git rev-parse --verify --quiet 'HEAD^' 2>/dev/null)"; then
-  diff_range=("$base" "HEAD")
+# --- helpers -----------------------------------------------------------------
+
+# fail <message...>: emit a GitHub error annotation + plain stderr, then abort.
+fail() {
+  echo "::error title=template-sync guard::$*" >&2
+  echo "template-sync guard: $*" >&2
+  exit 1
+}
+
+# run <description> <git args...>: run a git command, aborting loudly (not
+# silently) if it fails. Captures stderr so a real git failure is shown, never
+# discarded. Prints nothing extra on success; echoes stdout for the caller.
+run() {
+  local desc="$1"; shift
+  local out err rc
+  err="$(mktemp)"
+  out="$("$@" 2>"$err")"; rc=$?
+  if [ "$rc" -ne 0 ]; then
+    echo "::error title=template-sync guard::$desc failed (git exit $rc)" >&2
+    echo "  command: $*" >&2
+    sed 's/^/  git: /' "$err" >&2
+    rm -f "$err"
+    exit 1
+  fi
+  rm -f "$err"
+  printf '%s' "$out"
+}
+
+# --- sanity: we must be inside the sync repo --------------------------------
+
+run "git repository check" git rev-parse --is-inside-work-tree >/dev/null
+
+# --- determine the base to compare against ----------------------------------
+# The sync commit is HEAD on the action's sync branch; its first parent is the
+# pre-sync state. We need no remote refs, so this works regardless of fetch
+# depth or checkout config.
+#
+# We deliberately distinguish two cases:
+#   * HEAD has a parent  -> compare HEAD^..HEAD (normal).
+#   * HEAD has NO parent -> a legitimate edge case (root commit); inspect the
+#                           whole committed tree. We log that we did so.
+# Any OTHER git failure while probing is treated as fatal, not as "no parent".
+
+if git rev-parse --verify --quiet 'HEAD' >/dev/null 2>&1; then
+  :
 else
-  # No parent (unlikely) -> inspect the whole committed tree instead.
-  diff_range=("HEAD")
+  fail "cannot resolve HEAD — repository state is unexpected; refusing to push."
 fi
 
-changed="$(
-  {
-    git diff --name-only "${diff_range[@]}" 2>/dev/null
-    git diff --name-only HEAD 2>/dev/null       # uncommitted, just in case
-    git diff --name-only --cached 2>/dev/null
-  } | sort -u
+parent_probe_rc=0
+git rev-parse --verify --quiet 'HEAD^' >/dev/null 2>&1 || parent_probe_rc=$?
+
+if [ "$parent_probe_rc" -eq 0 ]; then
+  base="$(run "resolve HEAD^" git rev-parse --verify 'HEAD^')"
+  echo "template-sync guard: comparing sync commit $(git rev-parse --short HEAD) against parent $(git rev-parse --short "$base")"
+  committed="$(run "diff sync commit" git diff --name-only "$base" HEAD)"
+else
+  # rev-parse --quiet returns 1 specifically when the ref does not resolve
+  # (i.e. no parent). Treat only that as the legitimate root-commit case.
+  if [ "$parent_probe_rc" -ne 1 ]; then
+    fail "unexpected git error probing HEAD^ (exit $parent_probe_rc); refusing to push."
+  fi
+  echo "template-sync guard: HEAD has no parent (root commit); inspecting full committed tree."
+  committed="$(run "list committed tree" git ls-tree -r --name-only HEAD)"
+fi
+
+# Also catch anything staged or unstaged that is not yet in the commit, so a
+# guard bypass via a dirty tree is impossible.
+staged="$(run "list staged changes"     git diff --name-only --cached)"
+unstaged="$(run "list unstaged changes" git diff --name-only)"
+
+# --- evaluate ----------------------------------------------------------------
+# Portable across bash 3.2+ (no mapfile): assemble the candidate paths as
+# newline-separated text and filter. Empty sections contribute nothing.
+
+offending="$(
+  printf '%s\n%s\n%s\n' "$committed" "$staged" "$unstaged" \
+    | grep -E '^custom_components/' \
+    | sort -u
 )"
 
-# Look for forbidden paths: anything under custom_components/, and specifically
-# the upstream's original component directory being re-created.
-offending="$(printf '%s\n' "$changed" | grep -E '^custom_components/' || true)"
-
 if [ -n "$offending" ]; then
-  echo "::error::template-sync guard: refusing to push. The sync touched integration code:" >&2
+  echo "::error title=template-sync guard::refusing to push — the sync touched integration code (custom_components/**)." >&2
+  echo "template-sync guard: refusing to push. The sync touched integration code:" >&2
   printf '  %s\n' $offending >&2
   echo "" >&2
   echo "This means .templatesyncignore is missing, misplaced, or not excluding" >&2
