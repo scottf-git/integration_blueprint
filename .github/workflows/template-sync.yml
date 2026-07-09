@@ -5,13 +5,23 @@ name: Template sync
 # touches your integration code (custom_components/**) or your per-repo identity
 # files -- those are excluded by .templatesyncignore.
 #
-# Setup:
-#   1. Create a Personal Access Token (classic) with `repo` + `workflow` scope,
-#      or a fine-grained PAT with "Contents", "Pull requests" and "Workflows"
-#      read/write on this repo.
-#   2. Save it as a repository secret named TEMPLATE_SYNC_PAT.
-# The PAT is required because the synced payload includes .github/workflows/*,
-# which the default GITHUB_TOKEN is not allowed to write.
+# Setup — create a PAT and save it as the repo secret TEMPLATE_SYNC_PAT:
+#
+#   Fine-grained PAT (recommended; scope it to this repo only):
+#     - Contents:      Read and write   (push the sync branch)
+#     - Pull requests: Read and write   (open the sync PR)
+#     - Workflows:     Read and write   (payload includes .github/workflows/*)
+#
+#   Classic PAT (simpler, broader):
+#     - repo       (contents + pull requests)
+#     - workflow   (a SEPARATE scope — required to push .github/workflows/*)
+#
+# This one PAT authenticates BOTH the checkout below and the push/PR, so it
+# needs write access, not just read. The default GITHUB_TOKEN cannot be used:
+# it is not allowed to write workflow files, so the push would 403 on them.
+# Symptom of a too-narrow token: checkout + sync succeed, then the push fails
+# with "remote: Permission ... denied ... 403" (missing Contents or Workflows
+# write), or the PR step fails (missing Pull requests write).
 
 on:
   workflow_dispatch:
