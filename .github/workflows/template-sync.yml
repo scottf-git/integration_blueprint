@@ -52,10 +52,19 @@ jobs:
           upstream_branch: main
           target_gh_token: ${{ secrets.TEMPLATE_SYNC_PAT }}
           pr_labels: sync_template
-          # Enable hooks ONLY for the fail-closed safety guard below. No files
-          # are renamed, rewritten, or substituted -- the hook only validates.
+          # Hooks are enabled for two narrow, well-scoped steps only:
+          #   precommit: `git add --renormalize .` enforces THIS repo's own
+          #     .gitattributes policy (`* text=auto eol=lf`) on the merged files.
+          #     Upstream stores LICENSE/README/CONTRIBUTING with CRLF, so without
+          #     this every sync PR shows a whole-file line-ending diff. This is
+          #     not a custom transform -- it just makes the result obey the rule
+          #     the repo already declares.
+          #   prepush: the fail-closed guard. It only validates; never edits.
           is_allow_hooks: true
           hooks: |
+            precommit:
+              commands:
+                - git add --renormalize .
             prepush:
               commands:
                 - .github/template-sync-guard.sh

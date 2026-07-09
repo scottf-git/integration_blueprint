@@ -15,14 +15,14 @@ manifest.json
 hacs.json
 README.md
 CONTRIBUTING.md
-LICENSE
 .devcontainer.json
 config/configuration.yaml
 .github/ISSUE_TEMPLATE/**
 
-# LICENSE is ignored for two reasons: it carries the upstream author's copyright
-# line (yours to set), and upstream stores it with CRLF while .gitattributes
-# normalizes to LF -- so syncing it produces a whole-file "every line changed"
-# diff that is pure line-ending noise.
+# Note on LICENSE: it is intentionally NOT ignored. Upstream stores it (and a few
+# other files) with CRLF while .gitattributes normalizes to LF, which used to
+# produce whole-file line-ending noise. That is now handled generally by the
+# `git add --renormalize .` precommit step in the workflow, so a genuine upstream
+# LICENSE change still syncs cleanly. (If you customize your LICENSE, add it here.)
 
 # Note: .templatesyncignore itself is never synced (the action restores it).
