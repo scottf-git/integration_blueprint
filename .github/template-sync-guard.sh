@@ -13,22 +13,23 @@
 #
 # This hook only validates. It never renames, rewrites, or substitutes anything.
 
-set -euo pipefail
+set -uo pipefail
 
-# Determine the base to diff against: the sync branch's fork point from the
-# repo's previous state. We diff the current HEAD against its first parent when
-# available (the sync commit), else against the upstream tracking of the default
-# branch. Fall back to comparing against origin/<default>.
-default_branch="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')"
-default_branch="${default_branch:-main}"
+# The sync commit is HEAD on the action's sync branch. Compare it to its first
+# parent (the pre-sync state) to see exactly what the sync introduced. This needs
+# no remote refs, so it works regardless of fetch depth or checkout config.
+if base="$(git rev-parse --verify --quiet 'HEAD^' 2>/dev/null)"; then
+  diff_range=("$base" "HEAD")
+else
+  # No parent (unlikely) -> inspect the whole committed tree instead.
+  diff_range=("HEAD")
+fi
 
-# Collect files changed by the sync. Prefer the committed diff (HEAD vs the base
-# the sync branched from); include any not-yet-committed changes for safety.
 changed="$(
   {
-    git diff --name-only "origin/${default_branch}...HEAD" 2>/dev/null || true
-    git diff --name-only HEAD 2>/dev/null || true
-    git diff --name-only --cached 2>/dev/null || true
+    git diff --name-only "${diff_range[@]}" 2>/dev/null
+    git diff --name-only HEAD 2>/dev/null       # uncommitted, just in case
+    git diff --name-only --cached 2>/dev/null
   } | sort -u
 )"
 
