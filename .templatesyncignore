@@ -15,8 +15,14 @@ manifest.json
 hacs.json
 README.md
 CONTRIBUTING.md
+LICENSE
 .devcontainer.json
 config/configuration.yaml
 .github/ISSUE_TEMPLATE/**
+
+# LICENSE is ignored for two reasons: it carries the upstream author's copyright
+# line (yours to set), and upstream stores it with CRLF while .gitattributes
+# normalizes to LF -- so syncing it produces a whole-file "every line changed"
+# diff that is pure line-ending noise.
 
 # Note: .templatesyncignore itself is never synced (the action restores it).
