@@ -45,7 +45,6 @@ jobs:
           # Enable hooks ONLY for the fail-closed safety guard below. No files
           # are renamed, rewritten, or substituted -- the hook only validates.
           is_allow_hooks: true
-          is_dry_run: true   # TEST RUN: skip push/PR, still runs merge + hooks
           hooks: |
             prepush:
               commands:
